@@ -1,0 +1,4 @@
+fask
+pymongo
+dnspython
+python-dotenv
