@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do Form</title>
+</head>
+<body>
+
+    <h1>Add a To-Do Item</h1>
+
+    <form action="/submittodoitem" method="post">
+        <label for="itemName">Item Name</label>
+        <input type="text" id="itemName" name="itemName" placeholder="Enter item name" required>
+        <br><br>
+
+        <label for="itemDescription">Item Description</label><br>
+        <textarea id="itemDescription" name="itemDescription" rows="4" cols="30" placeholder="Enter description" required></textarea>
+        <br><br>
+
+        <input type="submit" value="Submit To-Do">
+    </form>
+
+</body>
+</html>
