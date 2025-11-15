@@ -25,5 +25,6 @@ def submittodoitem():
     data = dict(request.form)
     requests.post(f"{BACKEND_URL}/submittodoitem", json=data)
     return "todo item submitted successfully"
+
 if __name__ == '__main__':
     app.run(port=9000,debug=True)
