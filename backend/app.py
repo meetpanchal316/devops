@@ -10,18 +10,43 @@ client = pymongo.MongoClient(MONGO_URI)
 db=client.test
 
 collection=db['flask_db']
+todo_collection=db['todo_items']
 app = Flask(__name__)
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    if request.method == 'GET':
+        return (
+            "This endpoint expects a POST with JSON or form data: "
+        ), 200
     data = dict(request.json)
     username = data.get('name')
     email = data.get('email')
     if not username or not email:
         return "Missing username or email", 400
+    try:
+        collection.insert_one(data)
+    except Exception as e:
+        return jsonify({"error":"failed to insert","detail":str(e)}),500
     
-    collection.insert_one(data)
-    return f"Received username: {username}, email: {email}", 200
+    return jsonify({"message":"user data uploaded successfully"}), 201
+
+@app.route('/submittodoitem', methods=['POST'])
+def submit_todo_item():
+    data = dict(request.json)
+    item_name = data.get('itemName')
+    item_description = data.get('itemDescription')
+
+    if not item_name or not item_description:
+        return jsonify({"error": "itemName and itemDescription are required"}), 400
+
+    # Insert into MongoDB
+    try:
+        todo_collection.insert_one(data)
+    except Exception as e:
+        return jsonify({"error": "failed to insert", "detail": str(e)}), 500
+
+    return jsonify({"message": "To-Do item stored successfully"}), 201
 
 @app.route('/api', methods=['GET'])
 def api_list():
@@ -43,6 +68,11 @@ def api_list():
 @app.route('/view')
 def view():
     records = list(collection.find({}, {'_id': 0}))
+    return records
+
+@app.route('/viewtodoitems')
+def viewtodoitems():
+    records = list(todo_collection.find({}, {'_id': 0}))
     return records
 
 if __name__ == '__main__':
