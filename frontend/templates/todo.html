@@ -13,6 +13,10 @@
         <label for="itemId">Item ID</label>
         <input type="text" id="itemId" name="itemId" placeholder="Enter item id" required>
         <br><br>
+
+        <label for="itemUuid">Item UUID</label>
+        <input type="text" id="itemUuid" name="itemUuid" placeholder="Auto-generated UUID">
+        <br><br>
         
         <label for="itemName">Item Name</label>
         <input type="text" id="itemName" name="itemName" placeholder="Enter item name" required>
@@ -26,4 +30,17 @@
     </form>
 
 </body>
+
+<script>
+  function genUUID() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const uuidInput = document.getElementById('itemUuid');
+    if (uuidInput && !uuidInput.value) uuidInput.value = genUUID();
+  });
+</script>
 </html>
