@@ -17,6 +17,10 @@
         <label for="itemUuid">Item UUID</label>
         <input type="text" id="itemUuid" name="itemUuid" placeholder="Auto-generated UUID">
         <br><br>
+
+        <label for="itemHash">Item Hash</label>
+        <input type="text" id="itemHash" name="itemHash" placeholder="Auto-generated hash">
+        <br><br>
         
         <label for="itemName">Item Name</label>
         <input type="text" id="itemName" name="itemName" placeholder="Enter item name" required>
@@ -37,6 +41,31 @@
       (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
   }
+  
+  async function sha256hex(str) {
+    const enc = new TextEncoder();
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const idInput = document.getElementById('itemId');
+    const nameInput = document.getElementById('itemName');
+    const hashInput = document.getElementById('itemHash');
+
+    async function updateHash(){
+      const s = (idInput?.value || '') + '|' + (nameInput?.value || '');
+      hashInput.value = await sha256hex(s);
+    }
+
+    // update hash on changes
+    [idInput, nameInput].forEach(el => {
+      if (el) el.addEventListener('input', updateHash);
+    });
+
+    // initial fill
+    updateHash();
+  });
 
   document.addEventListener('DOMContentLoaded', function(){
     const uuidInput = document.getElementById('itemUuid');
