@@ -1,1 +1,199 @@
+docker-compose.yaml
+
+version: '3.8'
+
+services:
+  backend:
+    image: randomquotegeneratorbackend:V1
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+    container_name: backend_for_randquotegen
+  frontend:
+    image: randomquotegeneratorfrontend:V1
+    depends_on:
+      - backend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    container_name: frontend_for_randquotegen
+
+
+deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: panchalmeet/bmicalbackend:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+
+
+service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  selector:
+    app: backend  
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+
+this is to create gke cluster
+
+gcloud container clusters create randomquotegenerator   --num-nodes=1   --machine-type=e2-small   --zone=asia-south1-a   --disk-size=12GB   --enable-ip-alias
+
+configuring kubectl
+gcloud container clusters get-credentials randomquotegenerator --zone asia-south1-a
+
+creating cluster secrete
+kubectl create secret generic aws-secrets \
+  --from-literal=AWS_ACCESS_KEY_ID=AKI \
+  --from-literal=AWS_SECRET_ACCESS_KEY=snBlr9x
+
+
+scaling down replicas
+kubectl scale deployment --all --replicas=0
+
+cleaning the cluster 
+kubectl delete all --all
+kubectl delete secret --all
+kubectl delete configmap --all
+kubectl delete pvc --all
+
+deleting the cluster
+gcloud container clusters delete randomquotegenerator --zone asia-south1-a
+
+
+
+
+to provide nginx-ingress in gke 
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.6/deploy/static/provider/cloud/deploy.yaml
+
+check it 
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+
+
+to start jenkins with docker 
+
+jenkins dockerfile 
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+      docker.io \
+      curl \
+      ca-certificates \
+      apt-transport-https \
+      gnupg && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install kubectl
+RUN curl -fsSL https://dl.k8s.io/release/stable.txt | \
+    xargs -I {} curl -fsSL https://dl.k8s.io/release/{}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+# Install gcloud + GKE auth plugin
+RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    apt-get update && \
+    apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
+USER jenkins
+
+
+build this docker file 
+docker build -t jenkins-with-docker .
+
+run this command 
+getent group docker
+
+docker run -d \
+  --name jenkins \
+  -p 8081:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $HOME/.kube:/var/jenkins_home/.kube \
+  --group-add 108 \
+  jenkins-with-docker
+
+if the build fails 
+
+list projects
+gcloud projects list
+
+Set project
+export PROJECT_ID=totemic-life-473009-q3
+echo $PROJECT_ID
+
+Create service account (skip if exists)
+gcloud iam service-accounts create jenkins-ci \
+  --project $PROJECT_ID \
+  --display-name="Jenkins CI Service Account"
+
+Grant GKE permissions
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:jenkins-ci@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/container.developer"
+
+Create service account key
+gcloud iam service-accounts keys create jenkins-key.json \
+  --iam-account=jenkins-ci@$PROJECT_ID.iam.gserviceaccount.com
+
+Activate CI authentication (NON-INTERACTIVE)
+gcloud auth activate-service-account \
+  --key-file=jenkins-key.json
+
+Fetch GKE credentials (correct zone/region)
+List clusters
+gcloud container clusters list --project $PROJECT_ID
+
+Get credentials (example – zonal cluster)
+gcloud container clusters get-credentials qrgen \
+  --zone asia-south1-a \
+  --project $PROJECT_ID
+
+
+
+if at any times the pod gets evicted because of insufficient resources then do this 
+
+kubectl drain gke-qrgen-default-pool-205cf5af-clc6 --ignore-daemonsets --delete-emptydir-data
+kubectl uncordon gke-qrgen-default-pool-205cf5af-clc6
 
