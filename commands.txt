@@ -81,6 +81,9 @@ kubectl create secret generic aws-secrets \
   --from-literal=AWS_ACCESS_KEY_ID=AKI \
   --from-literal=AWS_SECRET_ACCESS_KEY=snBlr9x
 
+creating cluster secrets directly from the env file present in the project folder
+kubectl create secret generic nexus-secrets --from-env-file=.env
+
 
 scaling down replicas
 kubectl scale deployment --all --replicas=0
