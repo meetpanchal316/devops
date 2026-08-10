@@ -200,3 +200,6 @@ if at any times the pod gets evicted because of insufficient resources then do t
 kubectl drain gke-qrgen-default-pool-205cf5af-clc6 --ignore-daemonsets --delete-emptydir-data
 kubectl uncordon gke-qrgen-default-pool-205cf5af-clc6
 
+to remove all the hpa's from the cluster at once 
+
+kubectl get hpa -o name | xargs -I {} kubectl delete {}
